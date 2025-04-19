@@ -1,49 +1,81 @@
 const express = require('express');
 const axios = require('axios');
 const app = express();
+const path = require('path');
+
+// 静的ファイルを提供
+app.use(express.static(path.join(__dirname, 'public')));
 
 // HTMLフォームの表示
 app.get('/', (req, res) => {
   res.send(`
     <html>
-      <head><title>Multi Tab Browser</title></head>
+      <head>
+        <title>Proxy Browser</title>
+        <style>
+          body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+          }
+          #container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+          }
+          #url-bar {
+            background-color: #1f1f1f;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+          }
+          #url-input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background-color: #333;
+            color: #fff;
+            font-size: 18px;
+          }
+          #iframe-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-color: #1a1a1a;
+          }
+          iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+          }
+        </style>
+      </head>
       <body>
-        <h1>Multi Tab Browser</h1>
-        <div>
-          <ul id="tabs">
-            <li class="tab" data-tab="tab1">Google</li>
-            <li class="tab" data-tab="tab2">Yahoo</li>
-            <li class="tab" data-tab="tab3">GitHub</li>
-          </ul>
-          <div id="tab1" class="tab-content">
-            <iframe src="/go?url=https://www.google.com" style="width:100%; height:80vh;"></iframe>
+        <div id="container">
+          <div id="url-bar">
+            <input type="text" id="url-input" placeholder="Enter a URL (e.g., https://google.com)" />
           </div>
-          <div id="tab2" class="tab-content" style="display:none;">
-            <iframe src="/go?url=https://www.yahoo.co.jp" style="width:100%; height:80vh;"></iframe>
-          </div>
-          <div id="tab3" class="tab-content" style="display:none;">
-            <iframe src="/go?url=https://github.com" style="width:100%; height:80vh;"></iframe>
+          <div id="iframe-container">
+            <iframe id="browser" src=""></iframe>
           </div>
         </div>
-      </body>
-      <script>
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
 
-        tabs.forEach(tab => {
-          tab.addEventListener('click', () => {
-            const targetTab = tab.getAttribute('data-tab');
-            
-            tabContents.forEach(content => {
-              if(content.id === targetTab) {
-                content.style.display = 'block';
-              } else {
-                content.style.display = 'none';
-              }
-            });
+        <script>
+          const urlInput = document.getElementById('url-input');
+          const iframe = document.getElementById('browser');
+
+          urlInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+              const url = urlInput.value;
+              iframe.src = '/go?url=' + encodeURIComponent(url);
+            }
           });
-        });
-      </script>
+        </script>
+      </body>
     </html>
   `);
 });
@@ -60,23 +92,14 @@ app.get('/go', async (req, res) => {
   }
 
   try {
-    // axiosでリダイレクトを無視する設定を追加
+    // axiosでページを取得
     const response = await axios.get(cleanedUrl, {
       maxRedirects: 0, // リダイレクトを追跡しない
       validateStatus: (status) => status < 400, // 400番台はエラーと判定
     });
 
     // レスポンスのHTMLをそのまま返す
-    res.send(`
-      <html>
-        <head><title>${response.data.match(/<title>(.*?)<\/title>/)[1]}</title></head>
-        <body>
-          <div style="margin: 0; padding: 0; width: 100%; height: 100vh;">
-            ${response.data}
-          </div>
-        </body>
-      </html>
-    `);
+    res.send(response.data);
   } catch (error) {
     res.send('ページの取得に失敗しました。');
   }
@@ -85,5 +108,5 @@ app.get('/go', async (req, res) => {
 // サーバーを起動
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Proxy起動中：http://localhost:${PORT}`);
+  console.log(`Proxy Browser起動中：http://localhost:${PORT}`);
 });
