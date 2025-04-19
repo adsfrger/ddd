@@ -94,6 +94,9 @@ app.get('/go', async (req, res) => {
   try {
     // axiosでページを取得
     const response = await axios.get(cleanedUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      },
       maxRedirects: 0, // リダイレクトを追跡しない
       validateStatus: (status) => status < 400, // 400番台はエラーと判定
     });
